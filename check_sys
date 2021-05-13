@@ -77,3 +77,61 @@ case $num in
         sleep 2
 esac
 done
+
+
+
+#!/usr/bin/env bash
+
+check_net(){
+        echo "检测网络是否正常"
+        ping -c1 -w1 www.baidu.com &>/dev/null
+        if [ $? -eq 0 ];then
+            echo "网络正常"
+        else
+            echo "网络异常，请检查"
+            return 1
+        fi
+}
+
+check_yum(){
+        echo "检查yum源是否正常"
+        yum clean all
+        yum makecache fast
+        if [ $? -eq 0 ];then
+            echo "yum正常"
+        else
+            echo "yum异常，请检查"
+        fi
+}
+
+install_lamp(){
+        read -p "请输入要安装的包，用空格隔开，直接回车安装默认lamp环境" package
+        package=${package:=default}
+        if [ $package = 'defalut' ];then
+            yum -y install httpd  mariadb-server mariadb php php-mysql gd php-gd
+            if [ $? -ne 0 ];then
+            read -p ""下载错误，是否初始化yum源[y|n]"" ask
+            ask=${ask:='n'}
+            if [[ $ask = 'n' ]];then
+                echo "取消操作"
+                continue
+            else
+                echo "开始初始化yum源"
+                make_yum
+            fi
+            else
+                echo "lamp已安装完成"
+            fi
+        else
+            for i in $package
+            do
+                yum list |grep $i
+                if [ $? -eq 0 ];then
+                    yum -y install $i
+                else
+                    echo "$i不存在"
+                    sleep 1
+                fi
+            done
+        fi
+}

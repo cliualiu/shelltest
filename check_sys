@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+stty erase ^H
+check_net(){
+        ping -c1 -w1 www.baidu.com &>/dev/null
+        if [[ $? -ne 0 ]];then
+            echo "网络异常，请检查"
+            exit 1
+        else
+            echo "网络正常"
+        fi
+}
+check_yum(){
+        yum clean all
+        yum makecache
+        if [ $? -eq 0 ];then
+            echo "yum正常"
+        else
+            echo "yum异常，请检查"
+        fi
+}
+
+ip=`ip a |grep 'scope global' |awk '{print $2}'|awk -F "/" '{print $1}'`
+user_name=$USER
+user_ip=$(env|grep SSH_CLIENT|awk '{print $1}')
+time=$(date +%Y年%m月%d日-%H:%M:%S)
+disk=$(df -hl |awk 'NR==2{print $4}')
+men=$(free -h |grep 'Mem' |awk '{print $4}')
+while :
+do
+clear
+cat <<-EOF
+当前服务器IP地址：$ip
+当前登录用户：$user_name
+当前登录的IP地址：$user_ip
+当前时间：$time
+磁盘剩余空间：$disk
+内存剩余空间：$men
++----------------------------------------------------------------------------------+
+|                              System_tools V1.0                                   |
++----------------------------------------------------------------------------------+
+|                              1.检查网络                                          |
+|                              2.检查yum                                           |
+|                              3.关闭防火墙、selinux                               |
+|                              4.安装lnmp                                          |
+|                              5.退出                                              |
++----------------------------------------------------------------------------------+
+EOF
+echo "请输入任务编号："
+read num
+case $num in
+1)
+        check_net
+        sleep 2
+;;
+2)
+        check_yum
+        sleep 2
+;;
+3)
+        systemctl stop firewalld && setenforce 0 && echo "防火墙已关闭" || echo "关闭失败，可能是selinux已经关闭，请手动检查"
+;;
+4)
+        yum -y install httpd mariadb-server mariadb php php-mysql gd php-gd
+        if [ $? -eq 0 ];then
+            echo "lamp环境安装完成"
+        else
+            echo "lamp环境安装失败，请手动检查"
+        fi
+        sleep 2
+;;
+5)
+        echo "退出任务"
+        exit 0
+;;
+*)
+        echo "输入有误，请重新输入"
+        sleep 2
+esac
+done
